@@ -23,6 +23,7 @@ from lerobot.common.datasets.utils import dataset_to_policy_features
 from lerobot.common.envs.configs import EnvConfig
 from lerobot.common.envs.utils import env_to_policy_features
 from lerobot.common.policies.act.configuration_act import ACTConfig
+from lerobot.common.policies.act_bspline_tokenizer.configuration_act import ACTBsplineTokenizerConfig
 from lerobot.common.policies.diffusion.configuration_diffusion import DiffusionConfig
 from lerobot.common.policies.pi0.configuration_pi0 import PI0Config
 from lerobot.common.policies.pi0fast.configuration_pi0fast import PI0FASTConfig
@@ -47,6 +48,10 @@ def get_policy_class(name: str) -> PreTrainedPolicy:
         from lerobot.common.policies.act.modeling_act import ACTPolicy
 
         return ACTPolicy
+    elif name == "act_bspline_tokenizer":
+        from lerobot.common.policies.act_bspline_tokenizer.modeling_act import ACTBsplineTokenizerPolicy
+
+        return ACTBsplineTokenizerPolicy
     elif name == "vqbet":
         from lerobot.common.policies.vqbet.modeling_vqbet import VQBeTPolicy
 
@@ -70,6 +75,8 @@ def make_policy_config(policy_type: str, **kwargs) -> PreTrainedConfig:
         return DiffusionConfig(**kwargs)
     elif policy_type == "act":
         return ACTConfig(**kwargs)
+    elif policy_type == "act_bspline_tokenizer":
+        return ACTBsplineTokenizerConfig(**kwargs)
     elif policy_type == "vqbet":
         return VQBeTConfig(**kwargs)
     elif policy_type == "pi0":
