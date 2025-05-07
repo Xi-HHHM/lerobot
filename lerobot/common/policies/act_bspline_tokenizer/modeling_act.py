@@ -135,7 +135,10 @@ class ACTBsplineTokenizerPolicy(PreTrainedPolicy):
         # Action queue logic for n_action_steps > 1. When the action_queue is depleted, populate it by
         # querying the policy.
         if len(self._action_queue) == 0:
-            actions = self.model(batch)[0]
+            # Recontruct actions from tokenizer
+            tokens = self.model(batch)[0]
+            tokens = einops.rearrange(tokens, "b t d -> b (d t)", t=self.action_tokenizer.num_basis)
+            actions = self.action_tokenizer.reconstruct_traj_continuous(tokens)
 
             # TODO(rcadene): make _forward return output dictionary?
             actions = self.unnormalize_outputs({"action": actions})["action"]
