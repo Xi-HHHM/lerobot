@@ -159,8 +159,8 @@ class ACTBsplineTokenizerPolicy(PreTrainedPolicy):
         tokenized_action = self.action_tokenizer.encode_continuous(batch["action"], update_bounds=True)
 
         # Reconstruction
-        ## Sanity Check, check if the reconstructed tokens are correct            
-        # traj = self.action_tokenizer.reconstruct_traj_continuous(tokenized_action)
+        # Sanity Check, check if the reconstructed tokens are correct            
+        traj = self.action_tokenizer.reconstruct_traj_continuous(tokenized_action)
         # traj = traj.cpu().numpy()
         # a = batch["action"].cpu().numpy()
         # import matplotlib.pyplot as plt
@@ -180,16 +180,27 @@ class ACTBsplineTokenizerPolicy(PreTrainedPolicy):
         
         # plt.savefig("/home/huang/other_workspace/hongyi/rec.png")
 
+        traj_pad = batch["action_is_pad"]
+        batch["action_is_pad"] = torch.zeros((batch["action"].shape[0], self.action_tokenizer.num_basis),
+                                    dtype=torch.bool, device=batch["action"].device)
+
         batch["action"] = einops.rearrange(tokenized_action, "b (d t) -> b t d", t=self.action_tokenizer.num_basis)
 
-        # ToCheck!!!
-        batch["action_is_pad"] = torch.zeros((batch["action"].shape[0], self.action_tokenizer.num_basis),
-                                            dtype=torch.bool, device=batch["action"].device)
-
         actions_hat, (mu_hat, log_sigma_x2_hat) = self.model(batch)
+        actions_hat = einops.rearrange(actions_hat, "b t d -> b (d t)", t=self.action_tokenizer.num_basis)
+        traj_hat = self.action_tokenizer.reconstruct_traj_continuous(actions_hat)
 
+        ## MP weight level L1 loss
+        ## ToCheck!!!
+        # batch["action_is_pad"] = torch.zeros((batch["action"].shape[0], self.action_tokenizer.num_basis),
+        #                                     dtype=torch.bool, device=batch["action"].device)
+        # l1_loss = (
+        #     F.l1_loss(batch["action"], actions_hat, reduction="none") * ~batch["action_is_pad"].unsqueeze(-1)
+        # ).mean()
+                
+        # Trajectory level L1 loss
         l1_loss = (
-            F.l1_loss(batch["action"], actions_hat, reduction="none") * ~batch["action_is_pad"].unsqueeze(-1)
+            F.l1_loss(traj, traj_hat, reduction="none") * ~traj_pad.unsqueeze(-1)
         ).mean()
 
         loss_dict = {"l1_loss": l1_loss.item()}
