@@ -195,7 +195,7 @@ class ACTBsplineTokenizerConfig(PreTrainedConfig):
 def get_action_tokenizer():
     num_dof = 14
     num_basis = 15 
-    seq_len = 200
+    seq_len = 100
     
     return BSpline_Tokenizer(num_dof=num_dof,
                              num_basis=num_basis,
