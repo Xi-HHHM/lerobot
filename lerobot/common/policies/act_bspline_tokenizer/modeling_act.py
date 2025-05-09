@@ -204,7 +204,8 @@ class ACTBsplineTokenizerPolicy(PreTrainedPolicy):
             F.l1_loss(traj, traj_hat, reduction="none") * ~traj_pad.unsqueeze(-1)
         ).mean()
 
-        loss_dict = {"traj_l1_loss": traj_l1_loss.item()}
+        loss_dict = {"l1_loss": traj_l1_loss.item(),
+                     "w_l1_liss": l1_loss.item()}
         if self.config.use_vae:
             # Calculate Dₖₗ(latent_pdf || standard_normal). Note: After computing the KL-divergence for
             # each dimension independently, we sum over the latent dimension to get the total
