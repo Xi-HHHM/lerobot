@@ -173,4 +173,19 @@ class PreTrainedConfig(draccus.ChoiceRegistry, HubMixin, abc.ABC):
         # HACK: this is very ugly, ideally we'd like to be able to do that natively with draccus
         # something like --policy.path (in addition to --policy.type)
         cli_overrides = policy_kwargs.pop("cli_overrides", [])
-        return draccus.parse(cls, config_file, args=cli_overrides)
+        cli_ = [arg for arg in cli_overrides if arg[2:] in cls.__dict__]
+        policy_overrides = [arg[2:] for arg in cli_overrides if arg[2:] not in cls.__dict__]
+        config = draccus.parse(cls, config_file, args=cli_)
+
+        # Update policy
+        def normalize_to_int_if_possible(value):
+            try:
+                return int(value)
+            except (ValueError, TypeError):
+                return value
+
+        for policy_arg in policy_overrides:
+            key_value = policy_arg.split("=")
+            setattr(config, key_value[0], normalize_to_int_if_possible(key_value[1]))
+
+        return config
