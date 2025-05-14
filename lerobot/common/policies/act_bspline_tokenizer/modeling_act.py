@@ -80,6 +80,7 @@ class ACTBsplineTokenizerPolicy(PreTrainedPolicy):
             self.temporal_ensembler = ACTTemporalEnsembler(config.temporal_ensemble_coeff, config.chunk_size)
 
         self.reset()
+        self.last_action = None
 
     def get_optim_params(self) -> dict:
         # TODO(aliberts, rcadene): As of now, lr_backbone == lr
@@ -138,7 +139,14 @@ class ACTBsplineTokenizerPolicy(PreTrainedPolicy):
             # Recontruct actions from tokenizer
             tokens = self.model(batch)[0]
             tokens = einops.rearrange(tokens, "b t d -> b (d t)", t=self.action_tokenizer.num_basis)
-            actions = self.action_tokenizer.reconstruct_traj_continuous(tokens)
+            if self.last_action is None:
+                actions = self.action_tokenizer.reconstruct_traj_continuous(tokens)
+            else:
+                self.action_tokenizer.init_pos = True
+                actions = self.action_tokenizer.reconstruct_traj_continuous(tokens,
+                init_p=self.last_action)
+            self.last_action = actions[0, -1:, :]
+            
 
             # TODO(rcadene): make _forward return output dictionary?
             actions = self.unnormalize_outputs({"action": actions})["action"]
